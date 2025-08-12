@@ -1,0 +1,10 @@
+.nav ul{
+    display: flex;
+    justify-content: space-between;
+    list-style: none;
+    background-color: orangered;
+}
+
+.test {
+    background-color: red;
+}
