@@ -2,28 +2,43 @@ import styles from "./Map.module.css";
 import { useNavigate } from "react-router-dom";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import { useState } from "react";
+import {useCities} from "../contexts/CitiesContext.jsx";
+
+const flagemojiToPNG = (flag) => {
+  var countryCode = Array.from(flag, (codeUnit) => codeUnit.codePointAt())
+    .map((char) => String.fromCharCode(char - 127397).toLowerCase())
+    .join("");
+  return (
+    <img src={`https://flagcdn.com/24x18/${countryCode}.png`} alt="flag" />
+  );
+};
 
 export default function Map() {
   const navigate = useNavigate();
-  const [mapPosition, setMapPosition] = useState([40, 0]);
+  const {cities} = useCities();//global state using Context API
 
-  //   const [searchParams, setSearchParams] = useSearchParams();
-  //   const lat = searchParams.get("lat");
-  //   const lng = searchParams.get("lng");
-     console.log(setMapPosition);
+  const [mapPosition, setMapPosition] = useState([40, 0]);
+  console.log(setMapPosition);
      
   return (
     <div className={styles.mapContainer} onClick={() => navigate("form")}>
-      <MapContainer center={mapPosition} zoom={13} scrollWheelZoom={true} className={styles.map}>
+      <MapContainer center={mapPosition} zoom={5} scrollWheelZoom={true} className={styles.map}>
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png"
         />
-        <Marker position={mapPosition}>
+        {
+          cities.map((city) => {
+            const {lat,lng} = city.position;
+            
+          return <Marker position={[lat, lng]} key={city.id}>
           <Popup>
-            A pretty CSS3 popup. <br /> Easily customizable.
+            <span>{flagemojiToPNG(city.emoji)}</span> <span>{city.cityName}</span>
           </Popup>
         </Marker>
+        })
+        }
+        
       </MapContainer>
     </div>
   );
