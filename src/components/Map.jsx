@@ -2,7 +2,11 @@ import styles from "./Map.module.css";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from "react-leaflet";
 import { useEffect, useState } from "react";
+
 import {useCities} from "../contexts/CitiesContext.jsx";
+import { useGeolocation } from "../hooks/useGeolocation.js";
+import Button from "./Button.jsx";
+
 
 const flagemojiToPNG = (flag) => {
   var countryCode = Array.from(flag, (codeUnit) => codeUnit.codePointAt())
@@ -13,11 +17,18 @@ const flagemojiToPNG = (flag) => {
   );
 };
 
+
 export default function Map() {
   const {cities} = useCities();//global state using Context API
-
   const [mapPosition, setMapPosition] = useState([40, 0]);
   const [searchParams] = useSearchParams();//data from url
+  
+  //Rename the variables to understand their purpose better
+  const {isLoading: isLoadingPosition,
+     position: geolocationPosition,
+    getPosition} = useGeolocation();
+
+  // Data from url
   const mapLat = searchParams.get("lat");
   const mapLng = searchParams.get("lng");
      
@@ -27,8 +38,23 @@ export default function Map() {
       setMapPosition([mapLat, mapLng]);
   }, [mapLat, mapLng]);
 
+
+  //If useGeolocation() hook has already fetched data then update the mapPosition so that the map shows the current position of the user.Otherwise if the data is not fetched then do not update the map.
+  useEffect(function(){
+    if(geolocationPosition)
+      setMapPosition([geolocationPosition.lat, geolocationPosition.lng])
+  }, [geolocationPosition])
+  
   return (
     <div className={styles.mapContainer} >
+      {
+      //If geoLocationPosition is already fetched once then the user does not need to fetch it again (because the current position of the user will be the same always), so we remove the button
+      !geolocationPosition && <Button type='position' onClick={ getPosition}>
+      {
+        isLoadingPosition ? "Loading..." : "Use your position"
+      }
+      </Button>}
+
       <MapContainer center={mapPosition} zoom={5} scrollWheelZoom={true} className={styles.map}>
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
