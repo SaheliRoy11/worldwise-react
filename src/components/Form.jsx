@@ -32,6 +32,10 @@ function Form() {
   //fetch data when the component mounts
   useEffect(
     function () {
+
+      //If the user directly manually enters url and goes to '/app/form' without any lat and lng values then return without making any http request
+      if(!lat && !lng) return;
+
       async function fetchCityData() {
         try {
           setIsLoadingGeocoding(true);
@@ -61,6 +65,10 @@ function Form() {
 
   if(isLoadingGeocoding) {
     return <Spinner />
+  }
+
+  if(!lat && !lng){
+    return <Message message="Start by clicking on the map" />
   }
 
   if(geocodingError) {
