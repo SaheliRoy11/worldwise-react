@@ -25,21 +25,39 @@ function CitiesProvider({ children }) {
   }, []);
 
   async function getCity(id) {
-      try {
-        setIsLoading(true);
-        const res = await fetch(`${import.meta.env.VITE_BASE_URL}/cities/${id}`);
-        const data = await res.json();
-        setCurrentCity(data);
-      } catch (err) {
-        alert("There was an error in loading data...");
-      } finally {
-        setIsLoading(false);
-      }
-    
+    try {
+      setIsLoading(true);
+      const res = await fetch(`${import.meta.env.VITE_BASE_URL}/cities/${id}`);
+      const data = await res.json();
+      setCurrentCity(data);
+    } catch (err) {
+      alert("There was an error in loading data...");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function createCity(newCity) {
+    try {
+      setIsLoading(true);
+      const res = await fetch(`${import.meta.env.VITE_BASE_URL}/cities`, {
+        method: "POST",
+        body: JSON.stringify(newCity),
+        headers: {
+          "Content-type": "application/json"
+        }
+      });
+      const data = await res.json();
+      setCities(cities => [...cities, data]);//update the list of cities
+    } catch (err) {
+      alert("There was an error in loading data...");
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   return (
-    <CitiesContext.Provider value={{ cities, isLoading, currentCity, getCity }}>
+    <CitiesContext.Provider value={{ cities, isLoading, currentCity, getCity, createCity }}>
       {children}
     </CitiesContext.Provider>
   );
