@@ -1,11 +1,12 @@
 import styles from "./Map.module.css";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from "react-leaflet";
 import { useEffect, useState } from "react";
 
 import {useCities} from "../contexts/CitiesContext.jsx";
 import { useGeolocation } from "../hooks/useGeolocation.js";
 import Button from "./Button.jsx";
+import { useUrlPosition } from "../hooks/useUrlPosition";
 
 
 const flagemojiToPNG = (flag) => {
@@ -21,7 +22,6 @@ const flagemojiToPNG = (flag) => {
 export default function Map() {
   const {cities} = useCities();//global state using Context API
   const [mapPosition, setMapPosition] = useState([40, 0]);
-  const [searchParams] = useSearchParams();//data from url
   
   //Rename the variables to understand their purpose better
   const {isLoading: isLoadingPosition,
@@ -29,8 +29,7 @@ export default function Map() {
     getPosition} = useGeolocation();
 
   // Data from url
-  const mapLat = searchParams.get("lat");
-  const mapLng = searchParams.get("lng");
+   const [mapLat, mapLng] = useUrlPosition();
      
   //Synchronizes the map data to the City component.If the values are null that is no city is selected then the initial state value is used.If they have value then their values are used to render the map.If user clicks on backbutton after viewing details of a city, the values of mapLat and map goes back to null and hence not updated in mapPosition, therefore the map now will show the last selected city's position and not reset to initial values.
   useEffect(function(){
