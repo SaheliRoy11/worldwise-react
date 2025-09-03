@@ -1,23 +1,61 @@
-import { createContext, useState, useEffect, useContext } from "react";
+import { createContext, useEffect, useContext, useReducer } from "react";
 
 const CitiesContext = createContext();
 
+const initialState = {
+  cities: [],
+  isLoading: false,
+  currentCity: {},
+  error: "",
+};
+
+//Reducer function : They need to be pure functions.So we cannot make the http fetch requests to API here.
+//Naming convention of action types in reducer function: model the name as events and not setters. Example, it should not be 'setCities', but instead 'cities/loaded'
+function reducer(state, action) {
+  switch (action.type) {
+    case "loading":
+      return { ...state, isLoading: true };
+    case "cities/loaded":
+      return { ...state, cities: action.payload, isLoading: false };
+    case "city/loaded":
+      return { ...state, isLoading: false, currentCity: action.payload };
+    case "city/created":
+      return {
+        ...state,
+        cities: [...state.cities, action.payload],
+        isLoading: false,
+        currentCity: action.payload,//when a city is created it should become the current city
+      };
+    case "city/deleted":
+      return {
+        ...state,
+        cities: state.cities.filter((city) => city.id !== action.payload),
+        isLoading: false,
+        currentCity: {},//no need to keep a deleted city is current city(if in case it was)
+      };
+    case "rejected": //after the request has been rejected the error is caught in catch block
+      return { ...state, isLoading: false, error: action.payload };
+    default:
+      throw new Error("Unknown action");
+  }
+}
+
 function CitiesProvider({ children }) {
-  const [cities, setCities] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [currentCity, setCurrentCity] = useState({});
+  const [state, dispatch] = useReducer(reducer, initialState);
+  const { cities, isLoading, currentCity, error } = state;
 
   useEffect(function () {
     async function fetchCities() {
       try {
-        setIsLoading(true);
+        dispatch({ type: "loading" });
         const res = await fetch(`${import.meta.env.VITE_BASE_URL}/cities`);
         const data = await res.json();
-        setCities(data);
+        dispatch({ type: "cities/loaded", payload: data });
       } catch (err) {
-        alert("There was an error in loading data...");
-      } finally {
-        setIsLoading(false);
+        dispatch({
+          type: "rejected",
+          payload: "There was an error in loading cities...",
+        });
       }
     }
 
@@ -25,53 +63,69 @@ function CitiesProvider({ children }) {
   }, []);
 
   async function getCity(id) {
+    //if the city we want to load is already the current city then we do not need to call the API again. (Note: The id parameter passed to this function was extracted from an url and hence a string, but the currentCity.id is a number.So, we need to convert the string to number before comparison )
+    if (Number(id) === currentCity.id) return;
+
     try {
-      setIsLoading(true);
+      dispatch({ type: "loading" });
       const res = await fetch(`${import.meta.env.VITE_BASE_URL}/cities/${id}`);
       const data = await res.json();
-      setCurrentCity(data);
+      dispatch({ type: "city/loaded", payload: data });
     } catch (err) {
-      alert("There was an error in loading data...");
-    } finally {
-      setIsLoading(false);
+      dispatch({
+        type: "rejected",
+        payload: "There was an error in loading city...",
+      });
     }
   }
 
   async function createCity(newCity) {
     try {
-      setIsLoading(true);
+      dispatch({ type: "loading" });
       const res = await fetch(`${import.meta.env.VITE_BASE_URL}/cities`, {
         method: "POST",
         body: JSON.stringify(newCity),
         headers: {
-          "Content-type": "application/json"
-        }
+          "Content-type": "application/json",
+        },
       });
       const data = await res.json();
-      setCities(cities => [...cities, data]);//update the list of cities
+      dispatch({ type: "city/created", payload: data });
     } catch (err) {
-      alert("There was an error in creating city...");
-    } finally {
-      setIsLoading(false);
+      dispatch({
+        type: "rejected",
+        payload: "There was an error in creating city...",
+      });
     }
   }
 
   async function deleteCity(id) {
     try {
-      setIsLoading(true);
+      dispatch({ type: "loading" });
       await fetch(`${import.meta.env.VITE_BASE_URL}/cities/${id}`, {
-        method: 'DELETE'
+        method: "DELETE",
       });
-      setCities(cities => cities.filter(city => city.id !== id));
+      dispatch({ type: "city/deleted", payload: id });
     } catch (err) {
-      alert("There was an error in deleting city...");
-    } finally {
-      setIsLoading(false);
+      dispatch({
+        type: "rejected",
+        payload: "There was an error in deleting city...",
+      });
     }
   }
 
   return (
-    <CitiesContext.Provider value={{ cities, isLoading, currentCity, getCity, createCity, deleteCity }}>
+    <CitiesContext.Provider
+      value={{
+        cities,
+        isLoading,
+        currentCity,
+        error,
+        getCity,
+        createCity,
+        deleteCity,
+      }}
+    >
       {children}
     </CitiesContext.Provider>
   );
