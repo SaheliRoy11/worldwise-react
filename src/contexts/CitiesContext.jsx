@@ -1,4 +1,4 @@
-import { createContext, useEffect, useContext, useReducer } from "react";
+import { createContext, useEffect, useContext, useReducer, useCallback } from "react";
 
 const CitiesContext = createContext();
 
@@ -62,7 +62,7 @@ function CitiesProvider({ children }) {
     fetchCities();
   }, []);
 
-  async function getCity(id) {
+  const getCity = useCallback (async function getCity(id) {
     //if the city we want to load is already the current city then we do not need to call the API again. (Note: The id parameter passed to this function was extracted from an url and hence a string, but the currentCity.id is a number.So, we need to convert the string to number before comparison )
     if (Number(id) === currentCity.id) return;
 
@@ -77,7 +77,7 @@ function CitiesProvider({ children }) {
         payload: "There was an error in loading city...",
       });
     }
-  }
+  }, [currentCity.id]);
 
   async function createCity(newCity) {
     try {
